@@ -1,36 +1,37 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./pharmaceuticalCompany.sol";
 import "./FDA.sol";
 import "./file.sol";
 
-contract Systeminterface is FDA, PharmaceuticalCompany, File {
+contract Interface is FDA, PharmaceuticalCompany, File {
     address private owner;
     
     function systeminterface() public {
         owner = msg.sender;
     }
     
-    modifier onlyOwner() {
+    modifier onlyOwnerInterface() {
         require(msg.sender == owner);
         _;
     }
     
-    modifier checkFileAccess(string memory role, address FDA_FID, bytes32 fileHashId, address PHid) {
+    modifier checkFileAccessPharma(string memory role, address id, bytes32 fileHashId, address PHid) {
         uint pos;
         if(keccak256(abi.encode(role)) == keccak256("FDAAdmin")) {
-            require(pharmaceuticalCompanyToFDA[PHid][FDA_FID] > 0);
+            require(pharmaceuticalCompanyToFDA[PHid][id] > 0);
             pos = pharmaceuticalCompanyToFile[PHid][fileHashId];
             require(pos > 0);   
         }
         else if(keccak256(abi.encode(role)) == keccak256("pharmaceuticalCompany")) {
-            pos = pharmaceuticalCompanyToFile[FDA_FID][fileHashId];
+            pos = pharmaceuticalCompanyToFile[id][fileHashId];
             require(pos > 0);
         }
         _; 
     }
     
-    function checkProfile(address _user) public view onlyOwner returns(string memory, string memory){
+     function checkProfileInterface(address _user) public view onlyOwnerInterface returns(string memory, string memory){
        pharmaceuticalCompany storage ph = PharmaceuticalCompanies[_user];
         FDA storage f = FoodandDrugAdministration[_user];
           
@@ -42,35 +43,33 @@ contract Systeminterface is FDA, PharmaceuticalCompany, File {
             return ('', '');
     }
   
-    function grantAccessToFDA(address FDA_FID) public checkpharmaceuticalCompany(msg.sender) checkFDA(FDA_FID) {
+    function grantAccessToFDA(address ID) public checkpharmaceuticalCompany(msg.sender) checkFDA(ID) {
     pharmaceuticalCompany storage ph = PharmaceuticalCompanies[msg.sender];
-        FDA storage f = FoodandDrugAdministration[FDA_FID];
-        require(pharmaceuticalCompanyToFDA[msg.sender][FDA_FID] < 1);// this means FDA already been access
-      ph.FDAadmin_list.push(FDA_FID);
-        uint pos = ph.FDAadmin_list.length-1;  // new length of array
+        FDA storage f = FoodandDrugAdministration[ID];
+        require(pharmaceuticalCompanyToFDA[msg.sender][ID] < 1);// this means FDA already been access
+      ph.FDAadmin_list.push(ID);
+        uint pos = ph.FDAadmin_list.length;  // new length of array
 
-        pharmaceuticalCompanyToFDA[msg.sender][FDA_FID] = pos;
+        pharmaceuticalCompanyToFDA[msg.sender][ID] = pos;
         f.pharmaceuticalCompany_list.push(msg.sender);
     }
   
-    function addFile(string memory _file_name, string memory _file_type, bytes32 _fileHash, string memory  _file_secret) public checkpharmaceuticalCompany(msg.sender) {
+    function addFilePharma(string memory _file_name, string memory _file_type, bytes32 _fileHash, string memory  _file_secret) public checkpharmaceuticalCompany(msg.sender) {
        pharmaceuticalCompany storage ph = PharmaceuticalCompanies[msg.sender];
 
         require(pharmaceuticalCompanyToFile[msg.sender][_fileHash] < 1);
       
         hashToFile[_fileHash] = filesInfo({file_name:_file_name, file_type:_file_type,file_secret:_file_secret});
          ph.files.push(_fileHash);
-         uint pos = _fileHash.length-1;
+         uint pos = _fileHash.length;
         pharmaceuticalCompanyToFile[msg.sender][_fileHash] = pos;
     }
     
-    function getpharmaceuticalCompanyToFDA(address PHid) public view checkpharmaceuticalCompany(PHid) checkFDA(msg.sender) returns(string memory, uint8, address, bytes32[] memory){
-        pharmaceuticalCompany memory ph = PharmaceuticalCompanies[PHid];
-
+     function getpharmaceuticalCompanyToFDA(address PHid) public view checkpharmaceuticalCompany(PHid) checkFDA(msg.sender) returns(string memory, uint8, address, bytes32[]memory){
+        pharmaceuticalCompany storage ph = PharmaceuticalCompanies[PHid];
         require(pharmaceuticalCompanyToFDA[PHid][msg.sender] > 0);
-
-        (ph.name, ph.drugID, ph.PHid, ph.files);
-    }
+      return  (ph.name, ph.WE, ph.PHid, ph.files);
+     }
     
    /* function getFileSecret(bytes32 fileHashId, string role, address FID, address PHid) public view 
     checkFile(fileHashId) checkFileAccess(role, FID, fileHashId, PHid)
@@ -81,10 +80,10 @@ contract Systeminterface is FDA, PharmaceuticalCompany, File {
 
     
   
-    function getFileInfopharmaceuticalCompany(address PHid, bytes32 fileHashId) public view 
-    onlyOwner checkpharmaceuticalCompany(PHid) checkFileAccess("pharmaceuticalCompany", PHid, fileHashId, PHid) returns(string memory, string memory) {
+     function getFileInfopharmaceuticalCompany(address PHid, bytes32 fileHashId) public view 
+    onlyOwnerInterface checkpharmaceuticalCompany(PHid) checkFileAccessPharma("pharmaceuticalCompany", PHid, fileHashId, PHid) returns(string memory, string memory) {
         filesInfo memory f = getFileInfo(fileHashId);
         return (f.file_name, f.file_type);
-    }
+     }
   
 }
